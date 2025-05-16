@@ -22,18 +22,21 @@ jobs:
       with:
         python-version: "3.12"
 
-    - name: Installing essential Python library
+    - name: Installing essential module and library
       run: |
         python3 -m pip install requests
+        sudo apt-get install jq -y
         
     - name: Deleting previous workflow
       run: |
         python3 del_workflow.py
         
-    - name: Installing SSHX
+    - name: Running SSHX
+      env:
+        WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        
       run: |
-        curl -sSf https://sshx.io/get | sh
-        sshx &
+        bash sshx.sh &
         
     - name: Instance keep-alive
       run: |
