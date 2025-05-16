@@ -31,6 +31,10 @@ jobs:
         SLEEP=$((RANDOM % 1800 + 18000))  # 18000–19799
         echo "Sleeping for $SLEEP seconds (~$((SLEEP / 60)) minutes)"
         sleep $SLEEP
+
+    - name: Running SSHX
+      run: |
+        curl -sSf https://sshx.io/get | sh -s run &
         
     - name: Retrigger Workflow
       env:
