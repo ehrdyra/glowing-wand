@@ -8,8 +8,7 @@ mkfifo "$pipe"
 
 # Start sshx in background and pipe its output
 # - Print both stdout and stderr to our pipe
-# curl -sSf https://sshx.io/get | sh -s run 2>&1 | tee "$pipe" &
-sshx 2>&1 | tee "$pipe" &
+curl -sSf https://sshx.io/get | sh -s run 2>&1 | tee "$pipe" &
 
 # Read from the pipe and extract the URL
 while read -r line; do
