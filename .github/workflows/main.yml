@@ -1,0 +1,44 @@
+name: Deploy Webserver
+
+on:
+  workflow_dispatch:
+
+env:
+  GIT_API_TOKEN: ${{ secrets.GIT_API_TOKEN }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12"
+
+    - name: Deleting previous workflow
+      run: |
+        python3 del_workflow.py
+        
+    - name: Instance keep-alive
+      run: |
+        SLEEP=$((RANDOM % 1800 + 18000))  # 18000–19799
+        echo "Sleeping for $SLEEP seconds (~$((SLEEP / 60)) minutes)"
+        sleep $SLEEP
+        
+    - name: Retrigger Workflow
+      env:
+        REPO: ${{ github.repository }}
+
+      run: |
+        curl -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $GIT_API_TOKEN" \
+          https://api.github.com/repos/$REPO/actions/workflows/main.yml/dispatches \
+          -d '{"ref":"main"}'
