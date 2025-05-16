@@ -22,6 +22,10 @@ jobs:
       with:
         python-version: "3.12"
 
+    - name: Installing essential Python library
+      run: |
+        python3 -m pip install requests
+        
     - name: Deleting previous workflow
       run: |
         python3 del_workflow.py
