@@ -24,7 +24,7 @@ jobs:
 
     - name: Installing essential module and library
       run: |
-        python3 -m pip install requests
+        sudo python3 -m pip install requests
         sudo apt-get install jq -y
         curl -sSf https://sshx.io/get | sh
         
@@ -37,7 +37,7 @@ jobs:
         WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         
       run: |
-        python3 sshx.py
+        sudo python3 sshx.py
         
     - name: Instance keep-alive
       run: |
