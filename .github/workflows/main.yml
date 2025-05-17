@@ -30,7 +30,7 @@ jobs:
         
     - name: Deleting previous workflow
       run: |
-        python3 del_workflow.py
+        sudo python3 del_workflow.py
         
     - name: Running SSHX
       env:
