@@ -52,7 +52,7 @@ jobs:
         WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
       run: |
-        curl -X DELETE $(WEBHOOK_URL)/messages/$(cat /home/runner/.webhook_id)
+        curl -X DELETE $WEBHOOK_URL/messages/$(cat /home/runner/.webhook_id)
         
         curl -X POST \
           -H "Accept: application/vnd.github+json" \
