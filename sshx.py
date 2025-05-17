@@ -14,7 +14,7 @@ def get_sshx() -> str:
         if not b"sshx.io" in line:
             continue
 
-        return line[line.index(b"http") : -8].decode("UTF-8")
+        return line[line.index(b"http") : -5].decode("UTF-8")
 
 
 def send_webhook(content: str) -> dict | None:
