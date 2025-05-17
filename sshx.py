@@ -1,4 +1,4 @@
-import requests, subprocess, os
+import requests, subprocess, os, time
 
 URL = os.getenv("WEBHOOK_URL")
 
@@ -32,3 +32,6 @@ if __name__ == "__main__":
 
     with open("/home/runner/.webhook_id", "w") as f:
         f.write(webhook_message["id"])
+
+    while True:
+        time.sleep(5)
