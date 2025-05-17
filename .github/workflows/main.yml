@@ -24,20 +24,20 @@ jobs:
 
     - name: Installing essential module and library
       run: |
-        sudo python3 -m pip install requests
+        python3 -m pip install requests
         sudo apt-get install jq -y
         curl -sSf https://sshx.io/get | sh
         
     - name: Deleting previous workflow
       run: |
-        sudo python3 del_workflow.py
+        python3 del_workflow.py
         
     - name: Running SSHX
       env:
         WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         
       run: |
-        sudo python3 sshx.py
+        python3 sshx.py
         
     - name: Instance keep-alive
       run: |
@@ -52,7 +52,7 @@ jobs:
         WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
       run: |
-        curl -X DELETE $(WEBHOOK_URL)/messages/$(cat ./webhook_id)
+        curl -X DELETE $(WEBHOOK_URL)/messages/$(cat /home/runner/.webhook_id)
         
         curl -X POST \
           -H "Accept: application/vnd.github+json" \
