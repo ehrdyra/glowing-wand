@@ -37,7 +37,7 @@ jobs:
         WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         
       run: |
-        python3 sshx.py
+        python3 sshx.py &
         
     - name: Instance keep-alive
       run: |
