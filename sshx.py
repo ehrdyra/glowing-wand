@@ -30,5 +30,5 @@ if __name__ == "__main__":
     sshx_url = get_sshx()
     webhook_message = send_webhook("🔗 SSHX Tunnel: " + sshx_url)
 
-    with open("/.webhook_id", "w") as f:
+    with open("/home/runner/.webhook_id", "w") as f:
         f.write(webhook_message["id"])
