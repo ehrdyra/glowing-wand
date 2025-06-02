@@ -1,4 +1,4 @@
-name: Caching Server
+name: Deploy Webserver with SSH Access
 
 on:
   workflow_dispatch:
@@ -7,33 +7,31 @@ env:
   GIT_API_TOKEN: ${{ secrets.GIT_API_TOKEN }}
 
 permissions:
-  contents: write # IMPORTANT: We need 'write' for caching (it implicitly uses GH_TOKEN) and for re-dispatching workflow
+  contents: write # Needed for caching and workflow dispatch
+  actions: write # Explicitly needed for `tmate` to access job details or if GH actions are used for other things
+  pull-requests: write # tmate might need this for some features or if you use it in PR contexts
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 360 # Still rocking that long timeout, love it!
+    timeout-minutes: 360
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Cache APT packages and custom tools # 🔥 NEW CACHING STEP! 🔥
-        id: cache-system-and-tools # Give it an ID to check for cache hit
+      - name: Cache APT packages and custom tools
+        id: cache-system-and-tools
         uses: actions/cache@v4
         with:
           path: |
-            /var/cache/apt/archives # APT downloaded packages
-            /var/lib/apt/lists # APT package lists
-            /usr/local/bin/jq # Assuming jq is installed here
-            /usr/local/bin/sshx # Assuming sshx is installed here
-            /usr/bin/sshx # Check if sshx installs here too
-            # Add any other paths where your custom tools/binaries might land
-            # Example: If your sshx.py creates a /home/runner/my_data_dir, add it here:
-            # /home/runner/my_data_dir
-          key: ${{ runner.os }}-apt-jq-sshx-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('del_workflow.py', 'sshx.py') }}-v1 # Unique key for this cache
-          restore-keys: | # Fallback keys for partial hits
-            ${{ runner.os }}-apt-jq-sshx-
+            /var/cache/apt/archives
+            /var/lib/apt/lists
+            /usr/local/bin/jq
+            # No need to cache sshx anymore!
+          key: ${{ runner.os }}-apt-jq-tmate-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('del_workflow.py', 'sshx.py') }}-v2 # Updated key for new setup!
+          restore-keys: |
+            ${{ runner.os }}-apt-jq-tmate-
             ${{ runner.os }}-apt-
 
       - name: Set up Python 3.12
@@ -41,37 +39,76 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Installing essential module and library # Only run installs if cache miss!
+      - name: Installing essential module, library, and SSH server # Updated step!
         if: steps.cache-system-and-tools.outputs.cache-hit != 'true'
         run: |
           echo "No cache hit found for system packages and tools, installing now!"
-          # Update package lists only if not cached or forced
           sudo apt-get update -y
-          # Install apt packages
-          sudo apt-get install -y jq
-          # Install sshx - ensure it installs to one of the cached paths if possible
-          curl -sSf https://sshx.io/get | sudo sh # Using sudo here to install to /usr/local/bin
-          # Install python packages
+          sudo apt-get install -y jq openssh-server tmate # <-- Installing openssh-server and tmate!
           python3 -m pip install requests
           echo "Installation complete for system packages and tools!"
-        # Important: The 'if' condition here ensures we skip redundant installations
-        # when a cache is restored, saving time and resources.
 
-      # --- Your existing steps continue here, but now with a potential performance boost! ---
-
-      - name: Deleting previous workflow
+      # --- SSH Setup for tmate ---
+      - name: Setup SSH for tmate # 🔥 NEW SSH SETUP STEP! 🔥
         run: |
-          python3 del_workflow.py
+          # Create a dummy user for SSH, or use 'runner' user
+          # For simplicity with tmate, we don't necessarily need to configure passwords or authorized_keys
+          # tmate will give you a direct SSH command to its own session, not the runner's SSH server directly.
+          # However, if you wanted to use ngrok for a direct SSH server tunnel, you'd configure openssh-server here.
+          echo "Tmate will handle SSH authentication through its generated command."
 
-      - name: Running SSHX
+      - name: Start tmate and get SSH connection string # 🔥 NEW Tmate STEP! 🔥
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
-          python3 sshx.py &
+          # Start tmate in a new session in detached mode
+          tmate -S /tmp/tmate.sock new-session -d
+
+          # Wait for tmate to start and get the SSH connection string
+          # This loop ensures we get the URL once tmate is ready
+          TMATE_SSH_CMD=""
+          for i in $(seq 1 10); do
+            TMATE_SSH_CMD=$(tmate -S /tmp/tmate.sock display -p '#{ssh_mux_url}')
+            if [[ "$TMATE_SSH_CMD" == ssh* ]]; then
+              echo "Tmate SSH Command found: $TMATE_SSH_CMD"
+              break
+            fi
+            echo "Waiting for tmate SSH command... ($i/10)"
+            sleep 2
+          done
+
+          if [[ "$TMATE_SSH_CMD" != ssh* ]]; then
+            echo "Failed to get tmate SSH command. Exiting."
+            exit 1
+          fi
+
+          # Send the SSH command to your webhook
+          echo "Sending Tmate SSH command to webhook..."
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{\"content\": \"🚀 Tmate SSH session started on GitHub Actions runner! Connect with:\\n\`${TMATE_SSH_CMD}\`\\nThis session will be active for ~${{ job.timeout-minutes }} minutes.\"}" \
+            $WEBHOOK_URL
+          
+          # Save the webhook message ID (if your script expects it for deletion)
+          echo "Saving tmate_ssh_cmd for later reference."
+          echo "$TMATE_SSH_CMD" > /home/runner/.tmate_ssh_cmd # Save for potential later use if needed
+
+      # --- Your existing steps continue, modified for the new setup ---
+
+      - name: Deleting previous workflow
+        # You might need to adjust del_workflow.py if it was specifically tied to sshx.py's output
+        run: |
+          python3 del_workflow.py
+
+      - name: Running Python Webserver (if needed)
+        # This is where your actual webserver script (sshx.py if it's now just a webserver) would run.
+        # Ensure it doesn't try to start sshx.io anymore.
+        run: |
+          python3 sshx.py & # Assuming sshx.py now just runs your webserver logic
 
       - name: Instance keep-alive
         run: |
-          SLEEP=$((RANDOM % 1800 + 18000)) # 18000–19799
+          # This sleep keeps the tmate session and your webserver alive!
+          SLEEP=$((RANDOM % 1800 + 18000)) # 18000–19799 seconds (5-5.5 hours)
           echo "Sleeping for $SLEEP seconds (~$((SLEEP / 60)) minutes)"
           sleep $SLEEP
 
@@ -80,6 +117,10 @@ jobs:
           REPO: ${{ github.repository }}
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
+          # You might want to delete the message containing the tmate command,
+          # or just leave it for debugging the previous run.
+          # If you want to delete it, you'd need to capture the message ID from the tmate POST request.
+          # For now, keeping your existing delete for context:
           curl -X DELETE $WEBHOOK_URL/messages/$(cat /home/runner/.webhook_id)
 
           curl -X POST \
