@@ -62,13 +62,13 @@ jobs:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
           # Start tmate in a new session in detached mode
-          tmate -S /tmp/tmate.sock new-session -d
+          tmate -S /home/tmate.sock new-session -d
 
           # Wait for tmate to start and get the SSH connection string
           # This loop ensures we get the URL once tmate is ready
           TMATE_SSH_CMD=""
           for i in $(seq 1 10); do
-            TMATE_SSH_CMD=$(tmate -S /tmp/tmate.sock display -p '#{ssh_mux_url}')
+            TMATE_SSH_CMD=$(tmate -S /home/leftandright/anjay.tmp display -p '#{tmate_ssh}')
             if [[ "$TMATE_SSH_CMD" == ssh* ]]; then
               echo "Tmate SSH Command found: $TMATE_SSH_CMD"
               break
