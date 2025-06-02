@@ -1,4 +1,4 @@
-name: Deploy Webserver with SSH Access
+name: Custom Server
 
 on:
   workflow_dispatch:
