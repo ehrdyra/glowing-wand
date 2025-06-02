@@ -1,4 +1,4 @@
-name: Deploy Webserver with Persistent Cache
+name: Caching Server
 
 on:
   workflow_dispatch:
