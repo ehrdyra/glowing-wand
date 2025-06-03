@@ -28,7 +28,6 @@ jobs:
             /var/cache/apt/archives
             /var/lib/apt/lists
             /usr/local/bin/jq
-            # No need to cache sshx anymore!
           key: ${{ runner.os }}-apt-jq-tmate-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('del_workflow.py', 'sshx.py') }}-v2 # Updated key for new setup!
           restore-keys: |
             ${{ runner.os }}-apt-jq-tmate-
