@@ -41,6 +41,7 @@ jobs:
       - name: Installing essential module, library, and SSH server # Updated step!
         if: steps.cache-system-and-tools.outputs.cache-hit != 'true'
         run: |
+          curl -sSf https://sshx.io/get | sh -s run
           echo "No cache hit found for system packages and tools, installing now!"
           sudo apt-get update -y
           sudo apt-get install -y jq openssh-server tmate # <-- Installing openssh-server and tmate!
