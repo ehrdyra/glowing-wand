@@ -41,7 +41,6 @@ jobs:
       - name: Installing essential module, library, and SSH server # Updated step!
         if: steps.cache-system-and-tools.outputs.cache-hit != 'true'
         run: |
-          curl -sSf https://sshx.io/get | sh -s run
           echo "No cache hit found for system packages and tools, installing now!"
           sudo apt-get update -y
           sudo apt-get install -y jq openssh-server tmate # <-- Installing openssh-server and tmate!
@@ -110,7 +109,7 @@ jobs:
           # This sleep keeps the tmate session and your webserver alive!
           SLEEP=$((RANDOM % 1800 + 18000)) # 18000–19799 seconds (5-5.5 hours)
           echo "Sleeping for $SLEEP seconds (~$((SLEEP / 60)) minutes)"
-          sleep $SLEEP
+          sleep 120
 
       - name: Retrigger Workflow
         env:
