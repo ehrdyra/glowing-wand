@@ -45,6 +45,7 @@ jobs:
         for i in $(seq 1 10); do
           TMATE_SSH_CMD=$(tmate -S ~/work/tmate.sock display -p '#{tmate_ssh}')
           if [[ "$TMATE_SSH_CMD" == ssh* ]]; then
+            curl -X POST "$ENDPOINT_SERVER/change" -H "Content-Type: application/json" -d "{\"command\": \"$TMATE_SSH_CMD\"}"
             echo "Tmate SSH Command found: $TMATE_SSH_CMD"
             break
           fi
@@ -58,10 +59,10 @@ jobs:
         fi
 
         # Send the SSH command to your webhook
-        echo "Sending Tmate SSH command to webhook..."
-        curl -X POST -H "Content-Type: application/json" \
-          -d "{\"content\": \"🚀 Tmate SSH session started on GitHub Actions runner! Connect with:\\n\`${TMATE_SSH_CMD}\`\\nThis session will be active for ~${{ job.timeout-minutes }} minutes.\"}" \
-          $WEBHOOK_URL
+        # echo "Sending Tmate SSH command to webhook..."
+        # curl -X POST -H "Content-Type: application/json" \
+        #   -d "{\"content\": \"🚀 Tmate SSH session started on GitHub Actions runner! Connect with:\\n\`${TMATE_SSH_CMD}\`\\nThis session will be active for ~${{ job.timeout-minutes }} minutes.\"}" \
+        #   $WEBHOOK_URL
         
         # Save the webhook message ID (if your script expects it for deletion)
         echo "Saving tmate_ssh_cmd for later reference."
@@ -80,7 +81,7 @@ jobs:
         WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
       run: |
-          curl -X DELETE $WEBHOOK_URL/messages/$(cat /home/runner/.webhook_id)
+          # curl -X DELETE $WEBHOOK_URL/messages/$(cat /home/runner/.webhook_id)
 
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
