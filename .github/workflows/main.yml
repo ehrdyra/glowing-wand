@@ -68,6 +68,9 @@ jobs:
         # echo "Saving tmate_ssh_cmd for later reference."
         # echo "$TMATE_SSH_CMD" > /home/runner/.tmate_ssh_cmd # Save for potential later use if needed
         ORIGINAL_URL="$(curl -sL --connect-timeout 5 --max-time 10 -o /dev/null -w "%{url_effective}" $ENDPOINT_SERVER)"
+        echo "Original URL: $ORIGINAL_URL"
+        echo "TMATE Command: $TMATE_SSH_CMD"
+        
         curl -X POST "$ORIGINAL_URL/change" -H "Content-Type: application/json" -d "{\"command\": \"$TMATE_SSH_CMD\"}"
         
     - name: Instance keep-alive
