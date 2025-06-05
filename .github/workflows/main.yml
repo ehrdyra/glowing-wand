@@ -46,7 +46,7 @@ jobs:
         for i in $(seq 1 10); do
           TMATE_SSH_CMD=$(tmate -S ~/work/tmate.sock display -p '#{tmate_ssh}')
           if [[ "$TMATE_SSH_CMD" == ssh* ]]; then
-            ORIGINAL_URL="$(curl -sL --connect-timeout 5 --max-time 10 -o /dev/null -w "%{url_effective}" $ENDPOINT_SERVER)"
+            $ORIGINAL_URL="$(curl -sL --connect-timeout 5 --max-time 10 -o /dev/null -w "%{url_effective}" $ENDPOINT_SERVER)"
             curl -X POST "$ORIGINAL_URL/change" -H "Content-Type: application/json" -d "{\"command\": \"$TMATE_SSH_CMD\"}"
             echo "TMATE command is found"
             break
