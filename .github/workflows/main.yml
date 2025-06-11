@@ -8,6 +8,7 @@ env:
   NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
   VM_WEB_GUI_USERNAME: ${{ secrets.VM_WEB_GUI_USERNAME }}
   VM_WEB_GUI_PASSWORD: ${{ secrets.VM_WEB_GUI_PASSWORD }}
+  ZIP_PASSWD: ${{ secrets.VM_WEB_GUI_PASSWORD }}
 
 permissions:
   contents: read
