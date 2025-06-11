@@ -28,7 +28,7 @@ jobs:
         
     - name: Installing Dependencies
       run: |
-        sudo -E python3 -m pip install fastapi uvicorn python-dotenv python-multipart requests itsdangerous starlette --force-reinstall
+        sudo -E python3 -m pip install fastapi uvicorn python-dotenv python-multipart requests itsdangerous starlette --ignore-installed
         
     - name: Restore Previous State (Artifacts)
       run: |
