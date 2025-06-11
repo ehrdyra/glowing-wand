@@ -66,7 +66,7 @@ jobs:
         curl -o ngrok-tar.tgz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
         tar -xvzf ngrok-tar.tgz
         ./ngrok config add-authtoken $NGROK_API_KEY
-        nohup ./ngrok http --url=yeti-glorious-redbird.ngrok-free.app 5000 > ngrok.log 2>&1 &
+        nohup ./ngrok http --url=special-titmouse-heavily.ngrok-free.app 5000 > ngrok.log 2>&1 &
         
     - name: Instance keep-alive
       run: |
