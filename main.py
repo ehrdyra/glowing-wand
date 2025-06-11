@@ -18,6 +18,7 @@ import zipfile  # Import zipfile for handling zip archives
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi import Depends, status, Response
 from dotenv import load_dotenv
+import secrets
 
 # Load environment variables from .env file
 load_dotenv()
@@ -27,7 +28,7 @@ ACTIVITY_LOG_FILE = Path("activity.log")
 
 # Retrieve credentials from environment variables
 USERS_DB = {os.getenv("VM_WEB_GUI_USERNAME", None): os.getenv("VM_WEB_GUI_PASSWORD", None)}
-SECRET_KEY = os.getenv("VM_WEB_GUI_SECRET_KEY", "your-super-secret-key")
+SECRET_KEY = os.getenv("VM_WEB_GUI_SECRET_KEY", secrets.token_urlsafe(64))
 
 # You can generate a secret key using:
 # import os
