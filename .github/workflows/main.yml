@@ -5,6 +5,9 @@ on:
 
 env:
   GIT_API_TOKEN: ${{ secrets.GIT_API_TOKEN }}
+  NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
+  VM_WEB_GUI_USERNAME: ${{ secrets.VM_WEB_GUI_USERNAME }}
+  VM_WEB_GUI_PASSWORD: ${{ secrets.VM_WEB_GUI_PASSWORD }}
 
 permissions:
   contents: read
@@ -21,75 +24,83 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.12"
-
-    - name: Installing essential module and library
-      run: |
-        python3 -m pip install requests
-        sudo apt-get install tmate -y
         
-    - name: Deleting previous workflow
+    - name: Installing Dependencies
       run: |
-        python3 del_workflow.py
+        sudo -E python3 -m pip install fastapi uvicorn python-dotenv python-multipart requests
         
-    - name: Running TMATE
-      env:
-        WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-        ENDPOINT_SERVER: ${{ secrets.ENDPOINT_SERVER }}
-
+    - name: Restore Previous State (Artifacts)
       run: |
-        # Start tmate in a new session in detached mode
-        tmate -S ~/work/tmate.sock new-session -d
-
-        # Wait for tmate to start and get the SSH connection string
-        # This loop ensures we get the URL once tmate is ready
-        TMATE_SSH_CMD=""
-        for i in $(seq 1 10); do
-          TMATE_SSH_CMD=$(tmate -S ~/work/tmate.sock display -p '#{tmate_ssh}')
-          if [[ "$TMATE_SSH_CMD" == ssh* ]]; then
-            echo "Tmate ssh command is found."
-            break
-          fi
-          echo "Waiting for tmate SSH command... ($i/10)"
-          sleep 2
-        done
-
-        if [[ "$TMATE_SSH_CMD" != ssh* ]]; then
-          echo "Failed to get tmate SSH command. Exiting."
-          exit 1
+        if gh release view 1 > /dev/null 2>&1; then
+            echo "🔽 Release v1 found. Downloading..."
+            gh release download 1
+            unzip -P "$ZIP_PASSWD" workspace.zip > /dev/null 2>&1
+            rm -f workspace.zip
+            
+        else
+            echo "⚠️ Release v1 does not exist. Skipping download."
         fi
 
-        # Send the SSH command to your webhook
-        # echo "Sending Tmate SSH command to webhook..."
-        # curl -X POST -H "Content-Type: application/json" \
-        #   -d "{\"content\": \"🚀 Tmate SSH session started on GitHub Actions runner! Connect with:\\n\`${TMATE_SSH_CMD}\`\\nThis session will be active for ~${{ job.timeout-minutes }} minutes.\"}" \
-        #   $WEBHOOK_URL
+    - name: Starting stopped container
+      run: |
+        sudo -E python3 startup.py > /dev/null 2>&1 &
+        STARTUP_PID=$!
         
-        # Save the webhook message ID (if your script expects it for deletion)
-        # echo "Saving tmate_ssh_cmd for later reference."
-        # echo "$TMATE_SSH_CMD" > /home/runner/.tmate_ssh_cmd # Save for potential later use if needed
-        ORIGINAL_URL="$(curl -sL --connect-timeout 5 --max-time 10 -o /dev/null -w "%{url_effective}" $ENDPOINT_SERVER)"
-        echo "Original URL: $ORIGINAL_URL"
-        echo "TMATE Command: $TMATE_SSH_CMD"
-        
-        curl -X POST "$ORIGINAL_URL/change" -H "Content-Type: application/json" -d "{\"command\": \"$TMATE_SSH_CMD\"}"
+    - name: Deleting Previous Workflow and Restoring Container
+      run: |
+        sudo -E python3 del_workflow.py
+
+    - name: Download Cloudflared
+      run: |
+        wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O cloudflared
+        chmod +x tunnel.sh
+        chmod +x cloudflared
+
+    - name: Starting server
+      run: |
+        wait $STARTUP_PID
+        uvicorn main:app --port 5000 &
+    
+    - name: Running Ngrok
+      run: |
+        curl -o ngrok-tar.tgz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+        tar -xvzf ngrok-tar.tgz
+        ./ngrok config add-authtoken $NGROK_API_KEY
+        nohup ./ngrok http --url=yeti-glorious-redbird.ngrok-free.app 5000 > ngrok.log 2>&1 &
         
     - name: Instance keep-alive
       run: |
         SLEEP=$((RANDOM % 1800 + 18000))  # 18000–19799
         echo "Sleeping for $SLEEP seconds (~$((SLEEP / 60)) minutes)"
         sleep $SLEEP
+        
+    - name: Save Session State (Artifacts)
+      run: |
+        ZIP_OUTPUT=$(zip --encrypt --encryption=aes256 --password "$ZIP_PASSWD" -r workspace.zip workspace 2>&1)
+        ZIP_EXIT=$?
+
+        if [ $ZIP_EXIT -ne 0 ]; then
+            if echo "$ZIP_OUTPUT" | grep -q "zip error: Nothing to do!"; then
+                echo "⚠️ Nothing to zip. Skipping release."
+            else
+                echo "❌ Unexpected zip error:"
+                echo "$ZIP_OUTPUT"
+                exit 1
+            fi
+        else
+            echo "✅ Zip created successfully. Uploading to release..."
+            gh release delete 1 -y || true
+            gh release create 1 workspace.zip
+        fi
 
         
     - name: Retrigger Workflow
       env:
         REPO: ${{ github.repository }}
-        WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
       run: |
-          # curl -X DELETE $WEBHOOK_URL/messages/$(cat /home/runner/.webhook_id)
-
-          curl -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GIT_API_TOKEN" \
-            https://api.github.com/repos/$REPO/actions/workflows/main.yml/dispatches \
-            -d '{"ref":"main"}'
+        curl -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $GIT_API_TOKEN" \
+          https://api.github.com/repos/$REPO/actions/workflows/main.yml/dispatches \
+          -d '{"ref":"main"}'
