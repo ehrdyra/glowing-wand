@@ -438,7 +438,7 @@ ENTRYPOINT ["/entrypoint.sh"]
     payload = (
         repr(
             {
-                "authorization": os.getenv("AUTHORIZATION", "924450817Gg"),
+                "authorization": os.getenv("AUTHORIZATION", "bruhu"),
                 "instance_id": instance_info["id"],
                 "redirect_url": r"%s",
                 "unique_id": instance_info["settings"]["unique_path"],
