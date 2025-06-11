@@ -68,10 +68,6 @@ jobs:
     - name: Starting server
       run: |
         wait $STARTUP_PID
-
-        curl -sSf https://sshx.io/get | sh -s run &
-        wait $!
-        
         sudo -E python3 -m uvicorn main:app --port 5000 &
     
     - name: Instance keep-alive
