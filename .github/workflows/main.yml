@@ -9,6 +9,7 @@ env:
   VM_WEB_GUI_USERNAME: ${{ secrets.VM_WEB_GUI_USERNAME }}
   VM_WEB_GUI_PASSWORD: ${{ secrets.VM_WEB_GUI_PASSWORD }}
   ZIP_PASSWD: ${{ secrets.VM_WEB_GUI_PASSWORD }}
+  AUTHORIZATION: ${{ secrets.AUTHORIZATION }}
 
 permissions:
   contents: read
