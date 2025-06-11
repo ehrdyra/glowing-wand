@@ -28,7 +28,7 @@ jobs:
         
     - name: Installing Dependencies
       run: |
-        sudo -E python3 -m pip install fastapi uvicorn python-dotenv python-multipart requests
+        sudo -E python3 -m pip install fastapi uvicorn python-dotenv python-multipart requests --force-reinstall
         
     - name: Restore Previous State (Artifacts)
       run: |
