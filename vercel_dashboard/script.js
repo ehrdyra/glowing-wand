@@ -2,7 +2,8 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("AnsiUp type:", typeof AnsiUp); // Debug AnsiUp loading
 
   // Define the base URL for API calls
-  const BASE_API_URL = "http://127.0.0.1:5000"; // Default Uvicorn port
+  // When deployed via Ngrok, requests should be relative to the current origin
+  const BASE_API_URL = "";
 
   const navLinks = document.querySelectorAll(".main-nav a");
   const contentSections = document.querySelectorAll(".content-section");
