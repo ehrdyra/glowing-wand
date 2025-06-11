@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vercel Dashboard Clone</title>
+    <link rel="stylesheet" href="/dashboard/style.css" />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <aside class="sidebar">
+        <div class="logo">
+          <img
+            src="https://assets.vercel.com/image/upload/v1662130559/front/favicon/vercel/57x57.png"
+            alt="Vercel Logo"
+          />
+        </div>
+        <nav class="main-nav">
+          <ul>
+            <li>
+              <a href="#" class="active" data-section="overview">Overview</a>
+            </li>
+            <li><a href="#" data-section="machine">Machine</a></li>
+            <li><a href="#" data-section="settings">Settings</a></li>
+            <li><a href="#" id="logout-link">Logout</a></li>
+          </ul>
+        </nav>
+        <div class="team-switcher">
+          <button>
+            <span>My Team</span>
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+      </aside>
+      <main class="main-content">
+        <!-- New message area -->
+        <section id="overview-section" class="content-section active">
+          <header class="main-header">
+            <h1>Overview</h1>
+            <div class="header-actions">
+              <input type="text" placeholder="Search..." />
+              <button class="new-project-btn">+ New Project</button>
+            </div>
+          </header>
+          <section class="stats-grid">
+            <div class="stat-card">
+              <h3>Deployments</h3>
+              <p>1,234</p>
+            </div>
+            <div class="stat-card">
+              <h3>Bandwidth</h3>
+              <p>56.7 GB</p>
+            </div>
+            <div class="stat-card">
+              <h3>Builds</h3>
+              <p>890</p>
+            </div>
+          </section>
+          <section class="recent-activity">
+            <h2>Recent Activity</h2>
+            <div class="activity-list">
+              <!-- Activity items will be dynamically loaded here based on actual deployments, bandwidth usage, and builds -->
+              <p>No recent activity to display.</p>
+            </div>
+          </section>
+        </section>
+
+        <section id="machine-section" class="content-section">
+          <header class="main-header">
+            <h1>Machine</h1>
+            <div class="header-actions">
+              <button class="new-machine-btn">+ New Machine</button>
+            </div>
+          </header>
+          <div class="machine-list" id="machine-list">
+            <!-- Machine items will be loaded here by JavaScript -->
+            <p>Loading machine data...</p>
+          </div>
+        </section>
+
+        <section id="settings-section" class="content-section">
+          <header class="main-header">
+            <h1>Settings</h1>
+          </header>
+          <p>Settings content will go here.</p>
+        </section>
+
+        <!-- New Machine Details Section -->
+        <section id="machine-details-section" class="content-section">
+          <header class="main-header">
+            <h1 id="machine-details-title">Machine Details</h1>
+          </header>
+          <div class="tabs">
+            <button class="tab-button active" data-tab="usage">Usage</button>
+            <button class="tab-button" data-tab="file-manager">
+              File Manager
+            </button>
+            <button class="tab-button" data-tab="logs">Logs</button>
+            <button class="tab-button" data-tab="settings">Settings</button>
+          </div>
+          <div class="tab-content active" id="usage-tab">
+            <!-- <h3>Usage Information</h3> -->
+            <div class="usage-stats">
+              <p>CPU: <span id="usage-cpu">N/A</span></p>
+              <p>RAM: <span id="usage-ram">N/A</span></p>
+              <p>Network I/O: <span id="usage-net-io">N/A</span></p>
+            </div>
+            <div class="usage-charts">
+              <!-- <h3>Historical Usage</h3> -->
+              <div class="chart-container">
+                <canvas id="cpuUsageChart"></canvas>
+              </div>
+              <div class="chart-container">
+                <canvas id="ramUsageChart"></canvas>
+              </div>
+              <div class="chart-container">
+                <canvas id="netIoChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="tab-content" id="file-manager-tab">
+            <!-- <h3>File Manager</h3> -->
+            <div class="file-manager-controls">
+              <div id="drop-zone" class="drop-zone">
+                <p>Drag & drop files here to upload</p>
+                <p>or</p>
+                <button id="browse-files-btn" class="upload-button">
+                  Browse Files
+                </button>
+                <input
+                  type="file"
+                  id="file-upload-input"
+                  multiple
+                  style="display: none"
+                />
+              </div>
+              <div class="git-clone-section">
+                <input
+                  type="text"
+                  id="git-repo-url"
+                  placeholder="Git Repository URL"
+                />
+                <button id="git-clone-btn">Git Clone</button>
+              </div>
+            </div>
+            <div class="file-list-container">
+              <h4>Files in <span id="current-file-path">/</span></h4>
+              <ul id="file-list">
+                <!-- Files and folders will be loaded here by JavaScript -->
+                <li class="loading-item">Loading files...</li>
+              </ul>
+            </div>
+          </div>
+          <div id="delete-confirmation-modal" class="modal">
+            <div class="modal-content">
+              <span class="close-button">&times;</span>
+              <h2>Confirm Deletion</h2>
+              <p id="delete-confirmation-message">
+                Are you sure you want to delete
+                <strong id="file-to-delete-name"></strong>? This action cannot be undone.
+              </p>
+              <button id="confirm-delete-btn" class="delete-button">
+                Delete
+              </button>
+              <button id="cancel-delete-btn" class="cancel-button">
+                Cancel
+              </button>
+            </div>
+          </div>
+          <div class="tab-content" id="logs-tab">
+            <!-- <h3>Logs</h3> -->
+            <pre id="machine-logs">Loading logs...</pre>
+          </div>
+          <div class="tab-content" id="settings-tab">
+            <!-- <h3>Machine Settings</h3> -->
+            <div class="form-group">
+              <label for="build-command">Build Command (optional):</label>
+              <input
+                type="text"
+                id="build-command"
+                placeholder="e.g., npm run build"
+              />
+            </div>
+            <div class="form-group">
+              <label for="install-command">Install Command:</label>
+              <input
+                type="text"
+                id="install-command"
+                placeholder="e.g., npm install"
+              />
+            </div>
+            <div class="form-group">
+              <label for="run-command">Run Command:</label>
+              <input
+                type="text"
+                id="run-command"
+                placeholder="e.g., npm start"
+              />
+            </div>
+            <div class="settings-divider"></div>
+            <h3>HTTP Port Forwarding</h3>
+            <p class="description">Any applications running on the specified port will be forwarded with Cloudflared. To maintain a static URL, the URL will be shortened and remain accessible via <a href="https://goto-tau.vercel.app/" target="_blank" id="unique-path-link">https://goto-tau.vercel.app/<span id="display-unique-path"></span></a></p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="forwarding-port">Forwarding Port:</label>
+                <input
+                  type="text"
+                  id="forwarding-port"
+                  placeholder="e.g., 3000"
+                />
+              </div>
+              <div class="form-group">
+                <label for="unique-path">Unique Path:</label>
+                <input
+                  type="text"
+                  id="unique-path"
+                  placeholder="e.g., my-unique-id"
+                />
+              </div>
+            </div>
+            <button id="save-settings-btn">Save Settings</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- New Machine Modal -->
+    <div id="new-machine-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>Create New Machine</h2>
+        <form id="new-machine-form">
+          <div class="form-group">
+            <label for="machine-name">Name/Alias:</label>
+            <input type="text" id="machine-name" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="machine-ram">RAM (GB):</label>
+              <input
+                type="number"
+                id="machine-ram"
+                min="1"
+                max="8"
+                value="1"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="machine-core">Core:</label>
+              <input
+                type="number"
+                id="machine-core"
+                min="1"
+                max="4"
+                value="1"
+                required
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="docker-image">Docker Image:</label>
+            <div class="docker-image-input-group">
+              <input
+                type="text"
+                id="docker-image"
+                placeholder="e.g., ubuntu"
+                required
+              />
+              <select id="docker-image-tags" disabled>
+                <option value="" disabled selected>Select Tag</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="create-machine-btn">
+            Create Machine
+          </button>
+        </form>
+      </div>
+    </div>
+
+    </div>
+
+    <div id="message-area" class="message-area"></div>
+
+    <script src="https://unpkg.com/ansi_up@5.1.0/ansi_up.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <script src="/dashboard/script.js"></script>
+  </body>
+</html>
