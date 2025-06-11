@@ -57,11 +57,6 @@ jobs:
         chmod +x tunnel.sh
         chmod +x cloudflared
 
-    - name: Starting server
-      run: |
-        wait $STARTUP_PID
-        uvicorn main:app --port 5000 &
-    
     - name: Running Ngrok
       run: |
         curl -o ngrok-tar.tgz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
@@ -69,6 +64,11 @@ jobs:
         ./ngrok config add-authtoken $NGROK_API_KEY
         nohup ./ngrok http --url=special-titmouse-heavily.ngrok-free.app 5000 > ngrok.log 2>&1 &
         
+    - name: Starting server
+      run: |
+        wait $STARTUP_PID
+        uvicorn main:app --port 5000
+    
     - name: Instance keep-alive
       run: |
         SLEEP=$((RANDOM % 1800 + 18000))  # 18000–19799
