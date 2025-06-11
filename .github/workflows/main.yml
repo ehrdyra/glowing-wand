@@ -67,7 +67,7 @@ jobs:
     - name: Starting server
       run: |
         wait $STARTUP_PID
-        uvicorn main:app --port 5000
+        sudo -E python3 -m uvicorn main:app --port 5000
     
     - name: Instance keep-alive
       run: |
