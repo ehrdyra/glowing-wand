@@ -16,6 +16,7 @@ import stat
 import traceback  # Import traceback for detailed error logging
 import zipfile  # Import zipfile for handling zip archives
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.middleware.cors import CORSMiddleware # Import CORSMiddleware
 from fastapi import Depends, status, Response
 from dotenv import load_dotenv
 import secrets
@@ -70,7 +71,7 @@ log_process_lock = asyncio.Lock()
 # In-memory store for historical usage data
 # Structure: {machine_id: [{timestamp: str, cpu_percent: str, mem_usage: str, mem_limit: str, net_rx: str, net_tx: str}, ...]}
 historical_usage_data: dict[str, list[dict]] = {}
-MAX_HISTORY_POINTS = 100 # Keep last 100 data points for history
+MAX_HISTORY_POINTS = 100  # Keep last 100 data points for history
 
 
 # Define a Pydantic model for the Git clone request body
@@ -96,6 +97,15 @@ app = FastAPI()
 
 # Add SessionMiddleware
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 # Mount static files for the dashboard
 app.mount("/dashboard", StaticFiles(directory="vercel_dashboard", html=True), name="dashboard")
@@ -439,7 +449,7 @@ ENTRYPOINT ["/entrypoint.sh"]
     payload = (
         repr(
             {
-                "authorization": os.getenv("AUTHORIZATION", "bruhu"),
+                "authorization": os.getenv("AUTHORIZATION", "bruh"),
                 "instance_id": instance_info["id"],
                 "redirect_url": r"%s",
                 "unique_id": instance_info["settings"]["unique_path"],
@@ -894,7 +904,7 @@ async def get_machine_usage_snapshot(machine_id: str):
                 ["docker", "stats", "--no-stream", "--format", "{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}", container_id],
                 capture_output=True,
                 text=True,
-                check=True, # Check for non-zero exit code
+                check=True,  # Check for non-zero exit code
             )
 
             line = result.stdout.strip()
