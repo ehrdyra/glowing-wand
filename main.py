@@ -412,7 +412,7 @@ async def start_machine(machine_id: str):
     package_install_command = ""
 
     if "ubuntu" in img or "debian" in img:
-        package_install_command = "RUN apt-get update && apt-get install -y wget curl && rm -rf /var/lib/apt/lists/*"
+        package_install_command = "RUN apt-get update && apt-get install -y wget curl"
     elif "alpine" in img:
         package_install_command = "RUN apk add --no-cache wget curl"
     elif "centos" in img or "fedora" in img or "rockylinux" in img or "almalinux" in img:
