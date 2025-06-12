@@ -415,9 +415,18 @@ async def start_machine(machine_id: str):
     install_command = settings.get("install_command", "")
     build_command = settings.get("build_command", "")
     run_command_setting = settings.get("run_command", "")  # Renamed to avoid conflict with run_command_args
+    img = instance_info["docker_image"]
 
-    dockerfile_content = (
-        r"""FROM %s
+    package_install_command = ""
+
+    if "ubuntu" in img or "debian" in img:
+        package_install_command = "RUN apt-get update && apt-get install -y wget curl && rm -rf /var/lib/apt/lists/*"
+    elif "alpine" in img:
+        package_install_command = "RUN apk add --no-cache wget curl"
+    elif "centos" in img or "fedora" in img or "rockylinux" in img or "almalinux" in img:
+        package_install_command = "RUN yum install -y wget curl && yum clean all"
+
+    dockerfile_content = r"""FROM %s
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -435,10 +444,11 @@ COPY cloudflared /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/cloudflared
 RUN chmod +x /entrypoint.sh
-
+%s
 ENTRYPOINT ["/entrypoint.sh"]
-"""
-        % instance_info["docker_image"]
+""" % (
+        img,
+        package_install_command,
     )
 
     dockerfile_path = container_path / "Dockerfile"
