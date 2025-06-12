@@ -52,12 +52,16 @@ jobs:
       run: |
         sudo -E python3 del_workflow.py
 
-    - name: Download Cloudflared
+    - name: Download Cloudflared and SSHX
       run: |
         wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O cloudflared
+        curl -sSf https://sshx.io/get | sh
         chmod +x tunnel.sh
         chmod +x cloudflared
 
+    - name: Running SSHX
+      run: "sudo -E python3 sshx.py"
+      
     - name: Running Ngrok
       run: |
         curl -o ngrok-tar.tgz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
