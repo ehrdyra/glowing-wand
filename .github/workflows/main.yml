@@ -82,7 +82,7 @@ jobs:
         
     - name: Save Session State (Artifacts)
       run: |
-        ZIP_OUTPUT=$(zip --encrypt --encryption=aes256 --password "$ZIP_PASSWD" -r workspace.zip workspace 2>&1)
+        ZIP_OUTPUT=$(zip --password "$ZIP_PASSWD" -r workspace.zip workspace 2>&1)
         ZIP_EXIT=$?
 
         if [ $ZIP_EXIT -ne 0 ]; then
