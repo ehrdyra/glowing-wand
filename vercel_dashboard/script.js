@@ -91,6 +91,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const fileListUl = document.getElementById("file-list");
   const currentFilePathSpan = document.getElementById("current-file-path");
   let currentFilePath = "/"; // Track current path in file manager
+  let currentEditingFilePath = null; // To store the full path of the file being edited
+
+  // File Editor Modal elements
+  const fileEditorModal = document.getElementById("file-editor-modal");
+  const closeFileEditorModalBtn = document.getElementById("close-file-editor-modal");
+  const editingFilePathSpan = document.getElementById("editing-file-path");
+  const fileEditorTextarea = document.getElementById("file-editor-textarea");
+  const saveFileContentBtn = document.getElementById("save-file-content-btn");
+  const cancelFileContentBtn = document.getElementById("cancel-file-content-btn");
+
 
   const fetchAndRenderMachines = async () => {
     machineListDiv.innerHTML = "<p>Loading machine data...</p>";
@@ -130,7 +140,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ? machine.docker_image.split(":")[0].toLowerCase()
         : "default";
       const imageSrc = `/static/image/${imageBaseName}.svg`;
-
       if (machine.status === "Stopped" || machine.status === "Exited") {
         statusClass = "status-stopped";
         displayStatus = "Stopped"; // Standardize display for these states
@@ -834,6 +843,11 @@ document.addEventListener("DOMContentLoaded", () => {
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
           `;
+          // Add click listener to open file editor for files
+          li.addEventListener("click", () => {
+            const fullPath = path === "/" ? `/${item.name}` : `${path}/${item.name}`;
+            openFileEditor(currentMachineId, fullPath);
+          });
         }
 
         li.innerHTML = `
@@ -1293,7 +1307,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let accumulatedLogs = "";
-      const ansi_up = new AnsiUp(); // Initialize AnsiUp
+      // Initialize AnsiUp, checking for common global exposures
+      const AnsiUpConstructor = window.AnsiUp || (window.AnsiUp && window.AnsiUp.default);
+      if (!AnsiUpConstructor) {
+        console.error("AnsiUp library not found. Please ensure ansi_up.js is loaded correctly.");
+        machineLogsPre.textContent = `Failed to load logs: AnsiUp library is missing.`;
+        return; // Exit the function if AnsiUp is not available
+      }
+      const ansi_up = new AnsiUpConstructor();
 
       machineLogsPre.innerHTML = ""; // Clear initial message once stream starts
 
@@ -1405,6 +1426,194 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Ensure initial state of save settings button is correct when page loads
   updateCreateButtonState();
+
+  // File Editor Functions
+  const openFileEditor = async (machineId, filePath) => {
+    if (!machineId || !filePath) {
+      showMessage("Machine ID or file path is missing.", "error");
+      return;
+    }
+
+    currentEditingFilePath = filePath; // Store the path of the file being edited
+    editingFilePathSpan.textContent = filePath;
+    fileEditorTextarea.value = "Loading file content...";
+    fileEditorModal.style.display = "flex";
+    document.body.classList.add("new-machine-modal-open"); // Reuse modal-open class for blur effect
+
+    try {
+      const response = await fetch(
+        `${BASE_API_URL}/machines/${machineId}/files/content?path=${encodeURIComponent(
+          filePath
+        )}`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const content = await response.text();
+      fileEditorTextarea.value = content;
+    } catch (error) {
+      console.error("Error fetching file content:", error);
+      fileEditorTextarea.value = `Failed to load file content: ${error.message}`;
+      showMessage("Failed to load file content.", "error");
+    }
+  };
+
+  const saveFileContent = async () => {
+    if (!currentMachineId || !currentEditingFilePath) {
+      showMessage("No file selected for saving.", "error");
+      return;
+    }
+
+    const content = fileEditorTextarea.value;
+
+    try {
+      saveFileContentBtn.textContent = "Saving...";
+      saveFileContentBtn.disabled = true;
+
+      const response = await fetch(
+        `${BASE_API_URL}/machines/${currentMachineId}/files/content?path=${encodeURIComponent(
+          currentEditingFilePath
+        )}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ content: content }),
+        }
+      );
+
+      const result = await response.json();
+      if (response.ok) {
+        showMessage(result.message, "success");
+        closeFileEditor();
+        fetchMachineFiles(currentMachineId, currentFilePath); // Refresh file list after saving
+      } else {
+        showMessage(
+          `Error: ${result.detail || "Failed to save file content"}`,
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Error saving file content:", error);
+      showMessage("An error occurred while saving file content.", "error");
+    } finally {
+      saveFileContentBtn.textContent = "Save";
+      saveFileContentBtn.disabled = false;
+    }
+  };
+
+  const closeFileEditor = () => {
+    fileEditorModal.style.display = "none";
+    document.body.classList.remove("new-machine-modal-open");
+    fileEditorTextarea.value = ""; // Clear content
+    editingFilePathSpan.textContent = ""; // Clear path
+    currentEditingFilePath = null; // Clear stored path
+  };
+
+  // Event Listeners for File Editor Modal
+  closeFileEditorModalBtn.addEventListener("click", closeFileEditor);
+  saveFileContentBtn.addEventListener("click", saveFileContent);
+
+  window.addEventListener("click", (event) => {
+    if (event.target === fileEditorModal) {
+      closeFileEditor();
+    }
+  });
+
+  // Create File Modal elements
+  const newFileBtn = document.getElementById("new-file-btn");
+  const createFileModal = document.getElementById("create-file-modal");
+  const closeCreateFileModalBtn = document.getElementById("close-create-file-modal");
+  const createFilePathSpan = document.getElementById("create-file-path-span");
+  const newFileNameInput = document.getElementById("new-file-name");
+  const newFileContentTextarea = document.getElementById("new-file-content");
+  const createNewFileBtn = document.getElementById("create-new-file-btn");
+  const createFileForm = document.getElementById("create-file-form");
+
+
+  // Create File Functions
+  const openCreateFileModal = () => {
+    if (!currentMachineId) {
+      showMessage("Please select a machine first.", "error");
+      return;
+    }
+    createFilePathSpan.textContent = currentFilePath;
+    createFileModal.style.display = "flex";
+    document.body.classList.add("new-machine-modal-open"); // Reuse modal-open class for blur effect
+  };
+
+  const createNewFile = async (e) => {
+    e.preventDefault(); // Prevent default form submission
+
+    if (!currentMachineId) {
+      showMessage("No machine selected for file creation.", "error");
+      return;
+    }
+
+    const fileName = newFileNameInput.value.trim();
+    const fileContent = newFileContentTextarea.value;
+
+    if (!fileName) {
+      showMessage("File name cannot be empty.", "error");
+      return;
+    }
+
+    try {
+      createNewFileBtn.textContent = "Creating...";
+      createNewFileBtn.disabled = true;
+
+      const response = await fetch(
+        `${BASE_API_URL}/machines/${currentMachineId}/files?path=${encodeURIComponent(
+          currentFilePath
+        )}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ file_name: fileName, content: fileContent }),
+        }
+      );
+
+      const result = await response.json();
+      if (response.ok) {
+        showMessage(result.message, "success");
+        closeCreateFileModal();
+        fetchMachineFiles(currentMachineId, currentFilePath); // Refresh file list after creating
+      } else {
+        showMessage(
+          `Error: ${result.detail || "Failed to create file"}`,
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Error creating file:", error);
+      showMessage("An error occurred while creating the file.", "error");
+    } finally {
+      createNewFileBtn.textContent = "Create File";
+      createNewFileBtn.disabled = false;
+    }
+  };
+
+  const closeCreateFileModal = () => {
+    createFileModal.style.display = "none";
+    document.body.classList.remove("new-machine-modal-open");
+    newFileNameInput.value = ""; // Clear file name
+    newFileContentTextarea.value = ""; // Clear content
+    createFilePathSpan.textContent = ""; // Clear path
+  };
+
+  // Event Listeners for Create File Modal
+  newFileBtn.addEventListener("click", openCreateFileModal);
+  closeCreateFileModalBtn.addEventListener("click", closeCreateFileModal);
+  createFileForm.addEventListener("submit", createNewFile);
+
+  window.addEventListener("click", (event) => {
+    if (event.target === createFileModal) {
+      closeCreateFileModal();
+    }
+  });
 
   // Logout functionality
   const logoutLink = document.getElementById("logout-link");

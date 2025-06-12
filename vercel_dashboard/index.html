@@ -142,15 +142,20 @@
               <div id="drop-zone" class="drop-zone">
                 <p>Drag & drop files here to upload</p>
                 <p>or</p>
-                <button id="browse-files-btn" class="upload-button">
-                  Browse Files
-                </button>
-                <input
-                  type="file"
-                  id="file-upload-input"
-                  multiple
-                  style="display: none"
-                />
+                <div class="file-action-buttons">
+                  <button id="browse-files-btn" class="upload-button">
+                    Browse Files
+                  </button>
+                  <input
+                    type="file"
+                    id="file-upload-input"
+                    multiple
+                    style="display: none"
+                  />
+                  <button id="new-file-btn" class="upload-button">
+                    + New File
+                  </button>
+                </div>
               </div>
               <div class="git-clone-section">
                 <input
@@ -297,11 +302,44 @@
       </div>
     </div>
 
+    <!-- File Editor Modal -->
+    <div id="file-editor-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" id="close-file-editor-modal">&times;</span>
+        <h2 id="file-editor-title">Edit File: <span id="editing-file-path"></span></h2>
+        <textarea id="file-editor-textarea"></textarea>
+        <div class="modal-actions">
+          <button id="save-file-content-btn" class="create-machine-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    </div>
+
+    <!-- Create File Modal -->
+    <div id="create-file-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" id="close-create-file-modal">&times;</span>
+        <h2>Create New File in <span id="create-file-path-span">/</span></h2>
+        <form id="create-file-form">
+          <div class="form-group">
+            <label for="new-file-name">File Name:</label>
+            <input type="text" id="new-file-name" placeholder="e.g., index.html" required />
+          </div>
+          <div class="form-group">
+            <label for="new-file-content">Initial Content (optional):</label>
+            <textarea id="new-file-content" rows="10"></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" id="create-new-file-btn" class="create-machine-btn">Create File</button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <div id="message-area" class="message-area"></div>
 
-    <script src="https://unpkg.com/ansi_up@5.1.0/ansi_up.js"></script>
+    <script src="https://unpkg.com/ansi_up@4.0.4/ansi_up.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <script src="/dashboard/script.js"></script>
   </body>

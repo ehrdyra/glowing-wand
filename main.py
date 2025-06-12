@@ -199,8 +199,8 @@ async def get_machines():
                                     parts = result.stdout.strip().split("\t")
                                     container_id_from_docker = parts[0]
                                     status_from_docker = parts[1]
-                                    image_from_docker = parts[2]
-                                    created_at_str = parts[3]
+                                    # image_from_docker = parts[2] # No longer needed from docker ps
+                                    created_at_str = parts[2] # Shifted index
 
                                     # Determine simplified status based on Docker's output
                                     if status_from_docker.startswith("Up"):
@@ -214,17 +214,9 @@ async def get_machines():
                                     else:
                                         machine_info["status"] = "Unknown"  # Fallback for other statuses
 
-                                    # Use image_from_docker for the actual Docker image
-                                    machine_info["docker_image"] = image_from_docker
-                                    machine_info["container_id"] = container_id_from_docker  # Corrected variable name
-
-                                    # Sanitize docker_image for frontend display (extract base name)
-                                    display_image_name = image_from_docker.split(":")[0].lower()
-                                    # If the display_image_name is a UUID-like string (e.g., a machine ID), default it
-                                    if len(display_image_name) == 12 and all(c.isalnum() or c == "-" for c in display_image_name):
-                                        machine_info["docker_image"] = "default"
-                                    else:
-                                        machine_info["docker_image"] = display_image_name
+                                    # Retain the original docker_image from instance_info.json
+                                    # machine_info["docker_image"] is already set from instance_info.json at the top of this block
+                                    machine_info["container_id"] = container_id_from_docker
 
                                     # Calculate uptime
                                     created_at = None
@@ -415,7 +407,7 @@ async def start_machine(machine_id: str):
     install_command = settings.get("install_command", "")
     build_command = settings.get("build_command", "")
     run_command_setting = settings.get("run_command", "")  # Renamed to avoid conflict with run_command_args
-    img = instance_info["docker_image"]
+    img = instance_info["docker_image"].lower() # Convert to lowercase for consistent matching
 
     package_install_command = ""
 
@@ -424,7 +416,9 @@ async def start_machine(machine_id: str):
     elif "alpine" in img:
         package_install_command = "RUN apk add --no-cache wget curl"
     elif "centos" in img or "fedora" in img or "rockylinux" in img or "almalinux" in img:
-        package_install_command = "RUN yum install -y wget curl && yum clean all"
+        # For RHEL-based, prefer dnf if available, otherwise fall back to yum
+        package_install_command = "RUN if command -v dnf > /dev/null; then dnf install -y wget curl && dnf clean all; else yum install -y wget curl && yum clean all; fi"
+    # Add more elif conditions for other distros if needed in the future
 
     dockerfile_content = r"""FROM %s
 
@@ -447,7 +441,7 @@ RUN chmod +x /entrypoint.sh
 %s
 ENTRYPOINT ["/entrypoint.sh"]
 """ % (
-        img,
+        instance_info["docker_image"], # Use original image name here
         package_install_command,
     )
 
@@ -622,10 +616,13 @@ ENTRYPOINT ["/entrypoint.sh"]
                 text=True,
                 check=True,
             )
-            status_from_docker, image_from_docker = inspect_result.stdout.strip().split("\t")
+            status_from_docker, _ = inspect_result.stdout.strip().split("\t") # We don't need image_from_docker here
 
             machine_info["status"] = status_from_docker.capitalize()
             machine_info["container_id"] = container_id
+            # Do NOT overwrite machine_info["docker_image"] here.
+            # It should retain the original user-selected image (e.g., "python:latest")
+            # which is already present in machine_info from instance_info.json.
 
             # Save updated info
             f.seek(0)
@@ -1260,6 +1257,126 @@ async def delete_machine_folder(machine_id: str, folder_path: str = Query(..., a
     except Exception as e:
         print(f"ERROR: An unexpected error occurred during folder deletion: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+
+
+class FileContentRequest(BaseModel):
+    content: str
+
+
+@app.get("/machines/{machine_id}/files/content", dependencies=[Depends(authenticate_user)])
+async def get_machine_file_content(machine_id: str, path: str = Query(..., alias="path")):
+    base_dir_relative = Path("workspace") / f"container-{machine_id}" / "files"
+    base_dir = base_dir_relative.resolve()
+
+    clean_file_path = path.strip("/")
+    if not clean_file_path:
+        raise HTTPException(status_code=400, detail="Invalid file path: Cannot read the root directory.")
+
+    target_file_path = base_dir.joinpath(clean_file_path).resolve()
+
+    try:
+        if not target_file_path.is_relative_to(base_dir):
+            print(f"SECURITY ALERT: Attempt to read file outside base directory: {target_file_path}")
+            raise HTTPException(status_code=400, detail="Invalid file path: Not within machine's file directory.")
+    except ValueError as e:
+        print(f"SECURITY ALERT: ValueError during is_relative_to check for file read: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid file path: {e}")
+
+    if not target_file_path.exists():
+        raise HTTPException(status_code=404, detail=f"File not found: {path}")
+
+    if target_file_path.is_dir():
+        raise HTTPException(status_code=400, detail="Path is a directory. Cannot read directory content as a file.")
+
+    try:
+        with open(target_file_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+        return PlainTextResponse(content)
+    except Exception as e:
+        print(f"ERROR: Failed to read file {target_file_path}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to read file content: {e}")
+
+
+@app.put("/machines/{machine_id}/files/content", dependencies=[Depends(authenticate_user)])
+async def update_machine_file_content(machine_id: str, file_content_request: FileContentRequest, path: str = Query(..., alias="path")):
+    base_dir_relative = Path("workspace") / f"container-{machine_id}" / "files"
+    base_dir = base_dir_relative.resolve()
+
+    clean_file_path = path.strip("/")
+    if not clean_file_path:
+        raise HTTPException(status_code=400, detail="Invalid file path: Cannot write to the root directory.")
+
+    target_file_path = base_dir.joinpath(clean_file_path).resolve()
+
+    try:
+        if not target_file_path.is_relative_to(base_dir):
+            print(f"SECURITY ALERT: Attempt to write file outside base directory: {target_file_path}")
+            raise HTTPException(status_code=400, detail="Invalid file path: Not within machine's file directory.")
+    except ValueError as e:
+        print(f"SECURITY ALERT: ValueError during is_relative_to check for file write: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid file path: {e}")
+
+    if target_file_path.is_dir():
+        raise HTTPException(status_code=400, detail="Path is a directory. Cannot write content to a directory.")
+
+    # Ensure parent directories exist before writing
+    target_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with open(target_file_path, "w", encoding="utf-8") as f:
+            f.write(file_content_request.content)
+        log_activity(f"Machine {machine_id}: Updated file '{path}'.")
+        return {"message": f"File '{path}' updated successfully."}
+    except Exception as e:
+        print(f"ERROR: Failed to write to file {target_file_path}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update file content: {e}")
+
+
+class CreateFileRequest(BaseModel):
+    file_name: str
+    content: str = "" # Optional initial content
+
+@app.post("/machines/{machine_id}/files", dependencies=[Depends(authenticate_user)])
+async def create_machine_file(machine_id: str, file_data: CreateFileRequest, path: str = Query("/")):
+    base_dir_relative = Path("workspace") / f"container-{machine_id}" / "files"
+    base_dir = base_dir_relative.resolve()
+
+    clean_path = path.strip("/")
+    target_dir = base_dir.joinpath(clean_path).resolve()
+
+    # Security check: Ensure the target directory is within the base_dir
+    try:
+        if not target_dir.is_relative_to(base_dir):
+            print(f"SECURITY ALERT: Attempt to create file outside base directory: {target_dir}")
+            raise HTTPException(status_code=400, detail="Invalid path: Not within machine's file directory.")
+    except ValueError as e:
+        print(f"SECURITY ALERT: ValueError during is_relative_to check for file creation: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid path: {e}")
+
+    if not target_dir.is_dir():
+        raise HTTPException(status_code=400, detail="Target path is not a directory.")
+
+    file_name = file_data.file_name.strip()
+    if not file_name:
+        raise HTTPException(status_code=400, detail="File name cannot be empty.")
+
+    # Prevent path traversal in file_name itself
+    if "/" in file_name or "\\" in file_name:
+        raise HTTPException(status_code=400, detail="File name cannot contain path separators.")
+
+    new_file_path = target_dir / file_name
+
+    if new_file_path.exists():
+        raise HTTPException(status_code=409, detail=f"File '{file_name}' already exists at '{path}'.")
+
+    try:
+        with open(new_file_path, "w", encoding="utf-8") as f:
+            f.write(file_data.content)
+        log_activity(f"Machine {machine_id}: Created file '{path}/{file_name}'.")
+        return {"message": f"File '{file_name}' created successfully at '{path}'."}
+    except Exception as e:
+        print(f"ERROR: Failed to create file {new_file_path}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create file: {e}")
 
 
 @app.get("/docker-images/search", dependencies=[Depends(authenticate_user)])

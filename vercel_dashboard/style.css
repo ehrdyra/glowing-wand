@@ -820,6 +820,14 @@ body.new-machine-modal-open .dashboard-container {
   margin-top: 10px;
 }
 
+.file-action-buttons {
+  display: flex;
+  gap: 10px; /* Space between buttons */
+  justify-content: center; /* Center the buttons horizontally */
+  width: 100%; /* Ensure it takes full width of its parent */
+}
+
+
 #git-repo-url {
   flex-grow: 1;
   background-color: var(--accents-1);
@@ -1215,3 +1223,127 @@ body.login-page {
   height: 200px; /* Fixed height for charts */
   width: 100%;
 }
+
+/* File Editor Modal Styles */
+#file-editor-modal .modal-content {
+  max-width: 800px; /* Wider for code editing */
+  width: 95%;
+}
+
+#editing-file-path {
+  display: block;
+  margin-bottom: 15px;
+  font-size: 14px;
+  color: var(--accents-5);
+  text-align: center;
+  word-break: break-all;
+}
+
+#file-editor-textarea {
+  width: 100%;
+  height: 400px; /* Fixed height for the editor */
+  padding: 15px;
+  border: 1px solid var(--geist-border);
+  border-radius: 5px;
+  background-color: var(--accents-1);
+  color: var(--foreground);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical; /* Allow vertical resizing */
+  box-sizing: border-box;
+  margin-bottom: 20px;
+}
+
+#file-editor-textarea:focus {
+  outline: none;
+  border-color: var(--geist-success-light);
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.3);
+}
+
+.file-editor-actions {
+  display: flex;
+  justify-content: flex-end; /* Align buttons to the right */
+  gap: 10px;
+}
+
+#save-file-content-btn {
+  background-color: var(--geist-success);
+  color: var(--foreground);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+#save-file-content-btn:hover {
+  background-color: var(--geist-success-dark);
+}
+
+#cancel-file-content-btn {
+  background-color: var(--accents-3);
+  color: var(--foreground);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+#cancel-file-content-btn:hover {
+  background-color: var(--accents-4);
+}
+
+</file_content>
+
+Now that you have the latest state of the file, try the operation again with fewer, more precise SEARCH blocks. For large files especially, it may be prudent to try to limit yourself to <5 SEARCH/REPLACE blocks at a time, then wait for the user to respond with the result of the operation before following up with another replace_in_file call to make additional edits.
+(If you run into this error 3 times in a row, you may use the write_to_file tool as a fallback.)
+</error><environment_details>
+# VSCode Visible Files
+vercel_dashboard/style.css
+
+# VSCode Open Tabs
+startup.py
+sshx.py
+tunnel.sh
+main.py
+vercel_dashboard/script.js
+vercel_dashboard/index.html
+vercel_dashboard/style.css
+
+# Current Time
+6/12/2025, 1:47:11 PM (Asia/Makassar, UTC+8:00)
+
+# Context Window Usage
+457,501 / 1,048.576K tokens used (44%)
+
+# Current Mode
+ACT MODE
+</environment_details>
+<environment_details>
+# VSCode Visible Files
+vercel_dashboard/style.css
+
+# VSCode Open Tabs
+startup.py
+sshx.py
+tunnel.sh
+main.py
+vercel_dashboard/script.js
+vercel_dashboard/index.html
+vercel_dashboard/style.css
+
+# Current Time
+6/12/2025, 1:57:51 PM (Asia/Makassar, UTC+8:00)
+
+# Context Window Usage
+218,710 / 1,048.576K tokens used (21%)
+
+# Current Mode
+ACT MODE
+</environment_details>
