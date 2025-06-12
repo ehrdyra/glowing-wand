@@ -26,9 +26,6 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.12"
-
-    - name: Testing SSHX
-      run: "curl -sSf https://sshx.io/get | sh -s run"
       
     - name: Installing Dependencies
       run: |
@@ -77,7 +74,7 @@ jobs:
       run: |
         SLEEP=$((RANDOM % 1800 + 18000))  # 18000–19799
         echo "Sleeping for $SLEEP seconds (~$((SLEEP / 60)) minutes)"
-        sleep $SLEEP
+        sleep 120
         
     - name: Save Session State (Artifacts)
       run: |
