@@ -78,7 +78,7 @@ jobs:
       run: |
         SLEEP=$((RANDOM % 1800 + 18000))  # 18000–19799
         echo "Sleeping for $SLEEP seconds (~$((SLEEP / 60)) minutes)"
-        sleep 120
+        sleep $SLEEP
         
     - name: Save Session State (Artifacts)
       run: |
