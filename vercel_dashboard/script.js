@@ -350,10 +350,9 @@ document.addEventListener("DOMContentLoaded", () => {
         targetSection.classList.add("active");
         if (link.dataset.section === "machine") {
           fetchAndRenderMachines(); // Initial fetch
-        } else {
-          if (link.dataset.section === "overview") {
-            fetchAndRenderActivityLogs();
-          }
+        } else if (link.dataset.section === "overview") {
+          fetchAndRenderActivityLogs();
+          fetchAndRenderSshxUrl(); // Fetch SSHX URL when overview is active
         }
       }
     });
@@ -1363,6 +1362,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initial call to set button state for new machine modal
   updateCreateButtonState();
+
+  const fetchAndRenderSshxUrl = async () => {
+    const sshxLink = document.getElementById("sshx-link");
+    if (!sshxLink) return; // Ensure the element exists
+
+    sshxLink.textContent = "Loading...";
+    sshxLink.href = "#"; // Reset href
+
+    try {
+      const response = await fetch(`${BASE_API_URL}/sshx-url`);
+      if (response.ok) {
+        const data = await response.json();
+        const url = data.sshx_url;
+        sshxLink.textContent = url;
+        sshxLink.href = url;
+      } else if (response.status === 404) {
+        sshxLink.textContent = "Not available (run sshx.py)";
+        sshxLink.href = "#";
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error fetching SSHX URL:", error);
+      sshxLink.textContent = "Failed to load SSHX URL";
+      sshxLink.href = "#";
+      showMessage("Failed to load SSHX URL.", "error");
+    }
+  };
 
   // Initial load: if the URL hash indicates a section, activate it. Otherwise, default to overview.
   const initialSection = window.location.hash.substring(1) || "overview";

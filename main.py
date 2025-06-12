@@ -16,7 +16,7 @@ import stat
 import traceback  # Import traceback for detailed error logging
 import zipfile  # Import zipfile for handling zip archives
 from starlette.middleware.sessions import SessionMiddleware
-from fastapi.middleware.cors import CORSMiddleware # Import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware  # Import CORSMiddleware
 from fastapi import Depends, status, Response
 from dotenv import load_dotenv
 import secrets
@@ -1307,3 +1307,18 @@ async def get_activity_logs():
     except Exception as e:
         print(f"ERROR: Failed to read activity log file: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve activity logs: {e}")
+
+
+@app.get("/sshx-url", dependencies=[Depends(authenticate_user)])
+async def get_sshx_url():
+    """Returns the content of the .sshx_url file."""
+    SSHX_URL_FILE = Path(".sshx_url")
+    if not SSHX_URL_FILE.is_file():
+        raise HTTPException(status_code=404, detail="SSHX URL file not found.")
+    try:
+        with open(SSHX_URL_FILE, "r") as f:
+            sshx_url = f.read().strip()
+        return {"sshx_url": sshx_url}
+    except Exception as e:
+        print(f"ERROR: Failed to read .sshx_url file: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve SSHX URL: {e}")

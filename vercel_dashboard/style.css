@@ -449,6 +449,51 @@ body {
   color: var(--accents-5); /* Make the text a bit lighter */
 }
 
+/* SSHX URL Section Styles */
+.sshx-url-section {
+  margin-top: 40px; /* Space above this section */
+  margin-bottom: 40px; /* Space below this section */
+}
+
+.sshx-url-section h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+#sshx-url-display {
+  background-color: var(--accents-1);
+  border: 1px solid var(--geist-border);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px; /* Ensure it has a decent height */
+}
+
+#sshx-url-display p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--accents-6);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#sshx-link {
+  color: var(--geist-success-light);
+  text-decoration: none;
+  font-weight: 600;
+  word-break: break-all; /* Break long URLs */
+  transition: color 0.2s;
+}
+
+#sshx-link:hover {
+  color: var(--geist-success);
+  text-decoration: underline;
+}
+
 /* Modal Styles (retained for new machine modal) */
 .modal {
   display: none; /* Hidden by default */
