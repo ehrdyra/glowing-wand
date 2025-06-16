@@ -15,7 +15,7 @@ async def start_machine_container(machine_info: dict):
     """
     machine_id = machine_info.get("id")
     name = machine_info.get("name", f"machine-{machine_id}")
-    docker_image = machine_info.get("docker_image")
+    docker_image = machine_info.get("docker_image", "ubuntu:latest").lower()
     ram = machine_info.get("ram", "N/A")
     core = machine_info.get("core", "N/A")
     settings = machine_info.get("settings", {})
@@ -38,7 +38,15 @@ async def start_machine_container(machine_info: dict):
 
     install_command = settings.get("install_command", "")
     build_command = settings.get("build_command", "")
-    run_command_setting = settings.get("run_command", "")
+
+    package_install_command = ""
+
+    if "ubuntu" in docker_image or "debian" in docker_image:
+        package_install_command = "RUN apt-get update && apt-get install -y wget curl git"
+    elif "alpine" in docker_image:
+        package_install_command = "RUN apk add --no-cache wget curl"
+    elif "centos" in docker_image or "fedora" in docker_image or "rockylinux" in docker_image or "almalinux" in docker_image:
+        package_install_command = "RUN if command -v dnf > /dev/null; then dnf install -y wget curl && dnf clean all; else yum install -y wget curl && yum clean all; fi"
 
     dockerfile_content = f"""FROM {docker_image}
 
@@ -58,6 +66,7 @@ COPY cloudflared /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/cloudflared
 RUN chmod +x /entrypoint.sh
+{package_install_command}
 
 ENTRYPOINT ["/entrypoint.sh"]
 """
